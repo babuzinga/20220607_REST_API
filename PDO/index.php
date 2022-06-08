@@ -4,23 +4,40 @@ include_once '../header.php';
 // https://www.php.net/manual/ru/pdo.drivers.php
 // https://p0vidl0.info/php-pdo-rabotaem-s-bazami-dannyx-pravilno.html
 
-$host       = 'localhost';
-$db         = 'hueta';
-$user       = 'root';
-$password   = 'root';
-$connection = new PDO("mysql:host={$host};dbname={$db};charset=utf8", $user, $password);
+try {
+  $host       = 'localhost';
+  $db         = 'hueta';
+  $user       = 'root';
+  $password   = 'root';
+  $connection = new PDO("mysql:host={$host};dbname={$db};charset=utf8", $user, $password);
+} catch (PDOException $e) {
+  print "Error!: " . $e->getMessage();
+  die();
+}
 
-// Вставка данных
-$uuid = generate_uuid4();
-$code = generate_code(10);
 $name = find_random_item(['Tom', 'Oliver', 'Noah', 'Jack', 'Liam', 'Olivia', 'Emma', 'Charlotte', 'Amelia', 'Lucas', 'Sophia']);
-$connection->exec("INSERT INTO users VALUES ('{$uuid}', '{$name}', '{$code}')");
 
+// Вставка данных - 1 способ
+/*$uuid = generate_uuid4();
+$code = generate_code(10);
+$connection->exec("INSERT INTO users VALUES ('{$uuid}', '{$name}', '{$code}')");*/
 
+// Вставка данных - 2 способ
+$statement = $connection->prepare("INSERT INTO users VALUES (:uuid, :name, :code)");
+/*$results = $statement->execute([
+    'uuid'  => generate_uuid4(),
+    'code'  => generate_code(10),
+    'name'  => $name
+]);*/
+// PARAM_INT
+$statement->bindValue('uuid', generate_uuid4(), PDO::PARAM_STR);
+$statement->bindValue('code', generate_code(10), PDO::PARAM_STR);
+$statement->bindValue('name', $name, PDO::PARAM_STR);
+$statement->execute();
 
-// TODO Связанные параметры (экранирование записываемыз данных)
-$statement = $connection->prepare('SELECT * FROM users WHERE name = ?');
-$results = $connection->execute([$name]);
+// Пполучить значение одного столбца и является полезным при получении скалярных значений,
+// таких как количество, сумма, максимально или минимальное значения.
+$numberOfUsers = $connection->query('SELECT COUNT(*) FROM users')->fetchColumn();
 
 // Удаление данных (случайно)
 $connection->exec('DELETE FROM users ORDER BY RAND() LIMIT 1');

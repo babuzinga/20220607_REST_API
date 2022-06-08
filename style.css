@@ -23,3 +23,6 @@ td {
   white-space: nowrap;
   text-overflow: ellipsis;
 }
+p {
+  text-align: justify;
+}
